@@ -52,17 +52,19 @@ def map_certificate_name(name: x509.Name):
     ]
 
     # check if for one of the object identifiers there are multiple values
-    for i, name_attribute in enumerate(name_attributes):
-        if len(name_attribute) > 1:
-            print(name)
-            print(name_attribute)
-            raise Exception(
-                f"Unexpected data: multiple name attribute values found for {names_object_identifier_names[i]}"
-            )
+    # there a are some for organizational unit.. ignore them?
+    # for i, name_attribute in enumerate(name_attributes):
+    #     if len(name_attribute) > 1:
+    #         # print(name)
+    #         # print(name_attribute)
+    #         print(
+    #             f"Unexpected data: multiple name attribute values found for {names_object_identifier_names[i]}"
+    #         )
 
     # if not, map all of them to the first value or None
     name_attributes = [
-        na[0].value if len(na) > 0 else None
+        # na[0].value if len(na) > 0 else None
+        [x.value for x in na] if len(na) > 0 else None
         for na in name_attributes
     ]
 
@@ -361,62 +363,74 @@ def map_certificate_extension(name: str, extensions: x509.Extensions, oid: x509.
         return []
 
 
-def map_certificate_extensions(extensions: x509.Extensions) -> List[Tuple[str, Any]]:
-    return [
-        # flatten output of map_certificate_extension
-        t
-        for name in extension_object_identifier_names
-        for t in map_certificate_extension(f"EXTENSION_{name}", extensions, getattr(x509.ExtensionOID, name))
-    ]
+def map_certificate_extensions(extensions: x509.Extensions, serial_number: int) -> List[Tuple[str, Any]]:
+    res: List[Tuple[str, Any]] = []
+    for name in extension_object_identifier_names:
+        try:
+            res += map_certificate_extension(
+                f"EXTENSION_{name}", extensions, getattr(x509.ExtensionOID, name))
+        except Exception:
+            # ignore the error and just skip parsing this extension
+            print(
+                f"Could not parse extension '{name}' for certificate with id '{serial_number}'"
+            )
+    return res
 
 
 def map_certificate_row(row):
-    # parse PEM certificate format
-    cert = x509.load_pem_x509_certificate(
-        # decode ascii string to bytes
-        (
-            # add PEM prefix
-            "-----BEGIN CERTIFICATE-----" +
-            row['certificate_base64'] +
-            # and PEM suffix
-            "-----END CERTIFICATE-----"
-        ).encode("ascii")
-    )
+    try:
+        # parse PEM certificate format
+        cert = x509.load_pem_x509_certificate(
+            # decode ascii string to bytes
+            (
+                # add PEM prefix
+                "-----BEGIN CERTIFICATE-----\n" +
+                row['certificate_base64'] +
+                # and PEM suffix
+                "\n-----END CERTIFICATE-----"
+            ).encode("ascii")
+        )
 
-    # cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+        # cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
 
-    mapped_extensions = map_certificate_extensions(cert.extensions)
-    extension_labels = [x[0] for x in mapped_extensions]
-    extension_values = [x[1] for x in mapped_extensions]
+        mapped_extensions = map_certificate_extensions(
+            cert.extensions, cert.serial_number
+        )
+        extension_labels = [x[0] for x in mapped_extensions]
+        extension_values = [x[1] for x in mapped_extensions]
 
-    return pd.Series(
-        [
-            map_certificate_version(cert),
-            map_certificate_datetime(cert.not_valid_before),
-            map_certificate_datetime(cert.not_valid_after),
-            map_certificate_datetime(
-                cert.not_valid_after) - map_certificate_datetime(cert.not_valid_before),
-        ] +
-        map_certificate_name(cert.issuer) +
-        map_certificate_name(cert.subject) +
-        [
-            cert.signature_hash_algorithm.name if cert.signature_hash_algorithm != None else None,
-            map_certificate_signature_algorithm_oid(
-                cert.signature_algorithm_oid
-            )
-        ] +
-        extension_values,
-        index=[
-            'version',
-            'not_valid_before',
-            'not_valid_after',
-            'validity_time',
-        ] +
-        ['issuer_' + name for name in names_object_identifier_names] +
-        ['subject_' + name for name in names_object_identifier_names] +
-        [
-            'signature_hash_algorithm',
-            'signature_algorithm'
-        ] +
-        extension_labels
-    )
+        return pd.Series(
+            [
+                map_certificate_version(cert),
+                map_certificate_datetime(cert.not_valid_before),
+                map_certificate_datetime(cert.not_valid_after),
+                map_certificate_datetime(
+                    cert.not_valid_after) - map_certificate_datetime(cert.not_valid_before),
+            ] +
+            map_certificate_name(cert.issuer) +
+            map_certificate_name(cert.subject) +
+            [
+                cert.signature_hash_algorithm.name if cert.signature_hash_algorithm != None else None,
+                map_certificate_signature_algorithm_oid(
+                    cert.signature_algorithm_oid
+                )
+            ] +
+            extension_values,
+            index=[
+                'version',
+                'not_valid_before',
+                'not_valid_after',
+                'validity_time',
+            ] +
+            ['issuer_' + name for name in names_object_identifier_names] +
+            ['subject_' + name for name in names_object_identifier_names] +
+            [
+                'signature_hash_algorithm',
+                'signature_algorithm'
+            ] +
+            extension_labels
+        )
+    except Exception as e:
+        # return an empty row that will later be filtered out
+        print(e)
+        return pd.Series([], index=[], dtype=pd.Float64Dtype)

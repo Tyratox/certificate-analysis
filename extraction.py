@@ -2,9 +2,24 @@ import os
 import pandas as pd
 import click
 from typing import Tuple, List, Dict, Any
+from tqdm import tqdm
 
 # custom imports
-from helpers import is_valid_input_file, map_certificate_row
+from extraction_helpers import is_valid_input_file, map_certificate_row
+
+# Create new `pandas` methods which use `tqdm` progress
+# (can use tqdm_gui, optional kwargs, etc.)
+# (https://stackoverflow.com/a/34365537/2897827)
+tqdm.pandas()
+
+
+def derive_output(output: str, suffix: str, extension=".csv") -> str:
+    "Derives a new output pathname by appending a suffix after the filename but before the extension"
+    return output.removesuffix(
+        os.path.basename(output)
+    ) + \
+        os.path.basename(output).removesuffix(extension) + \
+        f"-{suffix}{extension}"
 
 
 @click.command()
@@ -70,44 +85,64 @@ def main(input: str, output: str):
         df['certificate_chain_base64'] = df['certificate_chain_base64'].apply(
             lambda chain: chain.split(";"))
 
-        # for testing just use the first row
-        df = df.head(100)
-        df = df.apply(map_certificate_row, axis=1, result_type='expand')
+        # store copy of original df with whole certificates
+        cert_df = df
 
-        # now drop all columns where all entries are empty / None
+        # reduce dataset for testing purposes
+        # df = df.head(100)
+
+        # extract the certificate data and show a loading bar as it might take a minute
+        df = df.progress_apply(
+            map_certificate_row,
+            axis=1,
+            result_type='expand'
+        )
+
+        # drop all columns where all entries are empty / None
         df = df.dropna(axis=1, how='all')
 
-        # now check which columns only consist of one single value
+        # find all rows that are empty
+        empty_row_indices = df.index[df.isna().all(axis=1)].tolist()
+        invalid_certificates = cert_df.iloc[empty_row_indices]
+        # drop all of the empty rows
+        df = df.drop(index=empty_row_indices)
+
+        # check which columns only consist of one single value
         # (https://stackoverflow.com/a/54405767/2897827)
         def single_value_cols(df):
             a = df.to_numpy()  # df.values (pandas<0.24)
             return (a[0] == a).all(0)
 
+        # array of booleans indicating whether a column only contains a single value
         is_single_value_col = single_value_cols(df)
-        first_row = df.iloc[0]
+        # list of column names that are single-valued, will be populated in the loop below
         single_valued_columns: List[str] = []
-
+        # create a dictionary mapping from column name to value for the columns that
+        # only contain a single value. will be populated in the loop below
         single_valued: Dict[str, Any] = {}
 
+        # get any row to retrieve that one value
+        first_row = df.iloc[0]
+
+        # fill 'single_valued_columns' and 'single_valued' by iterating over the
+        # set of all column names and the is_single_value_col array
         for single_value, column_name in zip(is_single_value_col, df.columns):
             if single_value:
-                print(
-                    f"All values in column '{column_name}' are equal: '{first_row[column_name]}'"
-                )
                 single_valued_columns.append(column_name)
                 single_valued[column_name] = first_row[column_name]
 
         # drop all single-valued columns
         df.drop(single_valued_columns, axis=1, inplace=True)
 
-        single_valued_output = output.removesuffix(
-            os.path.basename(output)
-        ) + \
-            os.path.basename(output).removesuffix(".csv") + \
-            "-single-valued.csv"
+        # derive output paths for the single-valued entries and the invalid certificate
+        # by appending a suffix to the filename
+        single_valued_output = derive_output(output, "single-valued")
+        invalid_output = derive_output(output, "invalid")
 
-        df.to_csv(output)
-        pd.DataFrame([single_valued]).to_csv(single_valued_output)
+        # store all of the computed data on disk
+        df.to_csv(output, index=False)
+        pd.DataFrame([single_valued]).to_csv(single_valued_output, index=False)
+        invalid_certificates.to_csv(invalid_output, index=False)
         break
 
 
