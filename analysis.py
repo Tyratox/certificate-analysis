@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import click
-from typing import Tuple
+from typing import Tuple, List, Dict, Any
 
 # custom imports
 from helpers import is_valid_input_file, map_certificate_row
@@ -35,7 +35,13 @@ def main(input: str, output: str):
 
     if len(input_files) == 0:
         raise Exception(
-            f"Did not find any valid input files given the path '{input}'")
+            f"Did not find any valid input files given the path '{input}'"
+        )
+
+    if not output.endswith(".csv"):
+        raise Exception(
+            f"Output path must end on .csv, '{output}' given"
+        )
 
     # read all input files, parse them and extract all useful data
     for input_file in input_files:
@@ -67,8 +73,41 @@ def main(input: str, output: str):
         # for testing just use the first row
         df = df.head(100)
         df = df.apply(map_certificate_row, axis=1, result_type='expand')
-        print(df)
+
+        # now drop all columns where all entries are empty / None
+        df = df.dropna(axis=1, how='all')
+
+        # now check which columns only consist of one single value
+        # (https://stackoverflow.com/a/54405767/2897827)
+        def single_value_cols(df):
+            a = df.to_numpy()  # df.values (pandas<0.24)
+            return (a[0] == a).all(0)
+
+        is_single_value_col = single_value_cols(df)
+        first_row = df.iloc[0]
+        single_valued_columns: List[str] = []
+
+        single_valued: Dict[str, Any] = {}
+
+        for single_value, column_name in zip(is_single_value_col, df.columns):
+            if single_value:
+                print(
+                    f"All values in column '{column_name}' are equal: '{first_row[column_name]}'"
+                )
+                single_valued_columns.append(column_name)
+                single_valued[column_name] = first_row[column_name]
+
+        # drop all single-valued columns
+        df.drop(single_valued_columns, axis=1, inplace=True)
+
+        single_valued_output = output.removesuffix(
+            os.path.basename(output)
+        ) + \
+            os.path.basename(output).removesuffix(".csv") + \
+            "-single-valued.csv"
+
         df.to_csv(output)
+        pd.DataFrame([single_valued]).to_csv(single_valued_output)
         break
 
 

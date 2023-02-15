@@ -385,14 +385,6 @@ def map_certificate_row(row):
 
     # cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
 
-    # output = cert.version,\
-    #     cert.serial_number,\
-    #     time.mktime(cert.not_valid_before.timetuple()),\
-    #     time.mktime(cert.not_valid_after.timetuple()),\
-    #     cert.issuer,\
-    #     cert.subject,\
-    #     cert.signature_hash_algorithm,
-
     mapped_extensions = map_certificate_extensions(cert.extensions)
     extension_labels = [x[0] for x in mapped_extensions]
     extension_values = [x[1] for x in mapped_extensions]
@@ -400,9 +392,10 @@ def map_certificate_row(row):
     return pd.Series(
         [
             map_certificate_version(cert),
-            cert.serial_number,
             map_certificate_datetime(cert.not_valid_before),
             map_certificate_datetime(cert.not_valid_after),
+            map_certificate_datetime(
+                cert.not_valid_after) - map_certificate_datetime(cert.not_valid_before),
         ] +
         map_certificate_name(cert.issuer) +
         map_certificate_name(cert.subject) +
@@ -415,9 +408,9 @@ def map_certificate_row(row):
         extension_values,
         index=[
             'version',
-            'serial_number',
             'not_valid_before',
             'not_valid_after',
+            'validity_time',
         ] +
         ['issuer_' + name for name in names_object_identifier_names] +
         ['subject_' + name for name in names_object_identifier_names] +
