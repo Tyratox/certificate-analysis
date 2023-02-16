@@ -414,6 +414,10 @@ def map_certificate_row(row):
         #     print(pem_cert)
         #     exit()
 
+        # if map_certificate_name(cert.subject)[names_object_identifier_names.index("COMMON_NAME")] is None:
+        #     print(pem_cert)
+        #     exit()
+
         return pd.Series(
             [
                 map_certificate_version(cert),

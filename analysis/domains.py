@@ -11,8 +11,6 @@ from itertools import chain
 # (https://stackoverflow.com/a/34365537/2897827)
 tqdm.pandas()
 
-SECONDS_PER_DAY = 60 * 60 * 24
-
 
 def plot_domain_count(df: pd.DataFrame, output_dir: str):
 
@@ -47,3 +45,7 @@ def plot_domain_count(df: pd.DataFrame, output_dir: str):
 
     # df.explode('subject_COMMON_NAME').explode('EXTENSION_SUBJECT_ALTERNATIVE_NAME')
     # print(df['EXTENSION_SUBJECT_ALTERNATIVE_NAME'].dropna())
+
+
+def count_num_no_common(df: pd.DataFrame):
+    print(df['subject_COMMON_NAME'].isna().sum())

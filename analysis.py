@@ -7,7 +7,10 @@ import matplotlib as plt
 import numpy as np
 
 from analysis.validity_days import plot_validity_days
-from analysis.domains import plot_domain_count
+from analysis.domains import plot_domain_count, count_num_no_common
+from analysis.basic_constraints import count_ca_enabled_certs
+from analysis.key_usage import count_key_usages
+from analysis.location import count_issuer_subject_country_matches
 
 # Create new `pandas` methods which use `tqdm` progress
 # (can use tqdm_gui, optional kwargs, etc.)
@@ -23,7 +26,11 @@ tqdm.pandas()
 @click.argument('output_dir')
 # flags / options
 @click.option('--validity-days', 'analysis', flag_value='validity-days', default=True)
-@click.option('--domain-count', 'analysis', flag_value='domain-count', default=True)
+@click.option('--domain-count', 'analysis', flag_value='domain-count')
+@click.option('--no-common-name-count', 'analysis', flag_value='no-common-name')
+@click.option('--ca-enabled-count', 'analysis', flag_value='ca-enabled-count')
+@click.option('--key-usage-count', 'analysis', flag_value='key-usage-count')
+@click.option('--issuer-subject-country-matches', 'analysis', flag_value='issuer-subject-country-matches')
 def main(input_file: str, output_dir: str, analysis: str):
     if not os.path.isfile(input_file):
         raise Exception(f"Input path has to be a file")
@@ -46,6 +53,14 @@ def main(input_file: str, output_dir: str, analysis: str):
         plot_validity_days(df, output_dir)
     elif analysis == "domain-count":
         plot_domain_count(df, output_dir)
+    elif analysis == "no-common-name-count":
+        count_num_no_common(df)
+    elif analysis == "ca-enabled-count":
+        count_ca_enabled_certs(df)
+    elif analysis == "key-usage-count":
+        count_key_usages(df)
+    elif analysis == "issuer-subject-country-matches":
+        count_issuer_subject_country_matches(df)
     else:
         raise Exception(f"Unimplemented analysis method '{analysis}'")
 
