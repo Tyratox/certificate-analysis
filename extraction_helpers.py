@@ -64,7 +64,7 @@ def map_certificate_name(name: x509.Name):
     # if not, map all of them to the first value or None
     name_attributes = [
         # na[0].value if len(na) > 0 else None
-        [x.value for x in na] + [x.value for x in na] if len(na) > 0 else None
+        [x.value for x in na] if len(na) > 0 else None
         for na in name_attributes
     ]
 
@@ -409,6 +409,10 @@ def map_certificate_row(row):
         #     if l == "EXTENSION_SUBJECT_ALTERNATIVE_NAME" and len(v) > 1000:
         #         print(pem_cert)
         #         exit()
+
+        # if "EXTENSION_EXTENDED_KEY_USAGE_SERVER_AUTH" not in extension_labels:
+        #     print(pem_cert)
+        #     exit()
 
         return pd.Series(
             [
