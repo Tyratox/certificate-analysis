@@ -405,6 +405,11 @@ def map_certificate_row(row):
         #     print(pem_cert)
         #     exit()
 
+        # for l, v in mapped_extensions:
+        #     if l == "EXTENSION_SUBJECT_ALTERNATIVE_NAME" and len(v) > 1000:
+        #         print(pem_cert)
+        #         exit()
+
         return pd.Series(
             [
                 map_certificate_version(cert),
