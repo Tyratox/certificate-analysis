@@ -13,13 +13,13 @@ from extraction_helpers import is_valid_input_file, map_certificate_row
 tqdm.pandas()
 
 
-def derive_output(output: str, suffix: str, extension=".csv") -> str:
+def derive_output(output: str, suffix: str, output_extension: str, new_extension: str) -> str:
     "Derives a new output pathname by appending a suffix after the filename but before the extension"
     return output.removesuffix(
         os.path.basename(output)
     ) + \
-        os.path.basename(output).removesuffix(extension) + \
-        f"-{suffix}{extension}"
+        os.path.basename(output).removesuffix(output_extension) + \
+        f"-{suffix}{new_extension}"
 
 
 @click.command()
@@ -30,7 +30,6 @@ def derive_output(output: str, suffix: str, extension=".csv") -> str:
 # flags / options
 @click.option('--csv', 'fmt', flag_value='csv', default=True)
 @click.option('--parquet', 'fmt', flag_value='parquet')
-# @click.option('--name', prompt='Your name', help='The person to greet.')
 def main(input: str, output: str, fmt: str):
     if fmt == 'parquet':
         extension = '.parquet'
@@ -145,11 +144,13 @@ def main(input: str, output: str, fmt: str):
         single_valued_output = derive_output(
             output,
             "single-valued",
+            extension,
             ".csv"
         )
         invalid_output = derive_output(
             output,
             "invalid",
+            extension,
             ".csv"
         )
 
