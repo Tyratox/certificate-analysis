@@ -32,7 +32,7 @@ def map_certificate_version(cert: x509.Certificate):
 
 def map_certificate_datetime(dt: datetime.datetime):
     # convert to unix timestamp
-    return time.mktime(dt.timetuple())
+    return int(time.mktime(dt.timetuple()))
 
 
 # get all name object identifier names
@@ -64,7 +64,7 @@ def map_certificate_name(name: x509.Name):
     # if not, map all of them to the first value or None
     name_attributes = [
         # na[0].value if len(na) > 0 else None
-        [x.value for x in na] if len(na) > 0 else None
+        [x.value for x in na] + [x.value for x in na] if len(na) > 0 else None
         for na in name_attributes
     ]
 
@@ -139,18 +139,22 @@ def map_certificate_extension(name: str, extensions: x509.Extensions, oid: x509.
                 ),
             ]
         elif isinstance(extension, x509.SubjectAlternativeName) or isinstance(extension, x509.IssuerAlternativeName):
-          # Subject alternative name is an X.509 extension that provides a list
-          # of general name instances that provide a set of identities for which
-          # the certificate is valid. The object is iterable to get every
-          # element.
-          # (https://cryptography.io/en/latest/x509/reference/#cryptography.x509.SubjectAlternativeName)
-            return [(name, extension.get_values_for_type(x509.GeneralName))]
+            # Subject alternative name is an X.509 extension that provides a list
+            # of general name instances that provide a set of identities for which
+            # the certificate is valid. The object is iterable to get every
+            # element.
+            # (https://cryptography.io/en/latest/x509/reference/#cryptography.x509.SubjectAlternativeName)
+
+            # stringify all the names to make the data format consistent
+            return [(name, [str(n) for n in extension.get_values_for_type(x509.GeneralName)])]
         elif isinstance(extension, x509.IssuerAlternativeName):
-          # Issuer alternative name is an X.509 extension that provides a list of
-          # general name instances that provide a set of identities for the
-          # certificate issuer. The object is iterable to get every element.
-          # (https://cryptography.io/en/latest/x509/reference/#cryptography.x509.IssuerAlternativeName)
-            return [(name, extension.get_values_for_type(x509.GeneralName))]
+            # Issuer alternative name is an X.509 extension that provides a list of
+            # general name instances that provide a set of identities for the
+            # certificate issuer. The object is iterable to get every element.
+            # (https://cryptography.io/en/latest/x509/reference/#cryptography.x509.IssuerAlternativeName)
+
+            # stringify all the names to make the data format consistent
+            return [(name, [str(n) for n in extension.get_values_for_type(x509.GeneralName)])]
         elif isinstance(extension, x509.SubjectKeyIdentifier):
             # The subject key identifier extension provides a means of
             # identifying certificates that contain a particular public key.
@@ -404,8 +408,8 @@ def map_certificate_row(row):
                 map_certificate_version(cert),
                 map_certificate_datetime(cert.not_valid_before),
                 map_certificate_datetime(cert.not_valid_after),
-                map_certificate_datetime(
-                    cert.not_valid_after) - map_certificate_datetime(cert.not_valid_before),
+                map_certificate_datetime(cert.not_valid_after) -
+                map_certificate_datetime(cert.not_valid_before),
             ] +
             map_certificate_name(cert.issuer) +
             map_certificate_name(cert.subject) +
@@ -428,7 +432,7 @@ def map_certificate_row(row):
                 'signature_hash_algorithm',
                 'signature_algorithm'
             ] +
-            extension_labels
+            extension_labels,
         )
     except Exception as e:
         # return an empty row that will later be filtered out

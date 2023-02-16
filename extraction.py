@@ -92,7 +92,7 @@ def main(input: str, output: str):
         # df = df.head(100)
 
         # extract the certificate data and show a loading bar as it might take a minute
-        df = df.progress_apply(
+        df: pd.DataFrame = df.progress_apply(
             map_certificate_row,
             axis=1,
             result_type='expand'
@@ -132,7 +132,7 @@ def main(input: str, output: str):
                 single_valued[column_name] = first_row[column_name]
 
         # drop all single-valued columns
-        df.drop(single_valued_columns, axis=1, inplace=True)
+        df = df.drop(single_valued_columns, axis=1)
 
         # derive output paths for the single-valued entries and the invalid certificate
         # by appending a suffix to the filename
@@ -141,6 +141,8 @@ def main(input: str, output: str):
 
         # store all of the computed data on disk
         df.to_csv(output, index=False)
+        # df.to_parquet(output, index=False)
+
         pd.DataFrame([single_valued]).to_csv(single_valued_output, index=False)
         invalid_certificates.to_csv(invalid_output, index=False)
         break
