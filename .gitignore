@@ -153,5 +153,6 @@ cython_debug/
 
 .DS_Store
 
-# don't track generated output csv data
+# don't track extracted data
 *.csv
+*.parquet

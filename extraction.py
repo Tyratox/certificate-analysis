@@ -28,9 +28,15 @@ def derive_output(output: str, suffix: str, extension=".csv") -> str:
 @click.argument('input', type=click.Path(exists=True))
 @click.argument('output')
 # flags / options
-# @click.option('--count', default=1, help='Number of greetings.')
+@click.option('--csv', 'fmt', flag_value='csv', default=True)
+@click.option('--parquet', 'fmt', flag_value='parquet')
 # @click.option('--name', prompt='Your name', help='The person to greet.')
-def main(input: str, output: str):
+def main(input: str, output: str, fmt: str):
+    if fmt == 'parquet':
+        extension = '.parquet'
+    else:
+        extension = ".csv"
+
     # first validate the arguments
     input_files = []
     # check if the input is a single file or a directory
@@ -53,9 +59,9 @@ def main(input: str, output: str):
             f"Did not find any valid input files given the path '{input}'"
         )
 
-    if not output.endswith(".csv"):
+    if not output.endswith(extension):
         raise Exception(
-            f"Output path must end on .csv, '{output}' given"
+            f"Output path must end on '{extension}', '{output}' given"
         )
 
     # read all input files, parse them and extract all useful data
@@ -136,13 +142,24 @@ def main(input: str, output: str):
 
         # derive output paths for the single-valued entries and the invalid certificate
         # by appending a suffix to the filename
-        single_valued_output = derive_output(output, "single-valued")
-        invalid_output = derive_output(output, "invalid")
+        single_valued_output = derive_output(
+            output,
+            "single-valued",
+            ".csv"
+        )
+        invalid_output = derive_output(
+            output,
+            "invalid",
+            ".csv"
+        )
 
-        # store all of the computed data on disk
-        df.to_csv(output, index=False)
-        # df.to_parquet(output, index=False)
+        # store all of the computed data on disk in the given format
+        if fmt == "parquet":
+            df.to_parquet(output, index=False)
+        else:
+            df.to_csv(output, index=False)
 
+        # single valued output and invalid certificates are always stored as csv, they are usually small
         pd.DataFrame([single_valued]).to_csv(single_valued_output, index=False)
         invalid_certificates.to_csv(invalid_output, index=False)
         break
