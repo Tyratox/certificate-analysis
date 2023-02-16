@@ -383,16 +383,14 @@ def map_certificate_extensions(extensions: x509.Extensions, serial_number: int) 
 
 def map_certificate_row(row):
     try:
+        pem_cert = "" + \
+            "-----BEGIN CERTIFICATE-----\n" +\
+            row['certificate_base64'] +\
+            "\n-----END CERTIFICATE-----"
         # parse PEM certificate format
         cert = x509.load_pem_x509_certificate(
             # decode ascii string to bytes
-            (
-                # add PEM prefix
-                "-----BEGIN CERTIFICATE-----\n" +
-                row['certificate_base64'] +
-                # and PEM suffix
-                "\n-----END CERTIFICATE-----"
-            ).encode("ascii")
+            pem_cert.encode("ascii")
         )
 
         # cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
@@ -402,6 +400,10 @@ def map_certificate_row(row):
         )
         extension_labels = [x[0] for x in mapped_extensions]
         extension_values = [x[1] for x in mapped_extensions]
+
+        # if map_certificate_datetime(cert.not_valid_after) - map_certificate_datetime(cert.not_valid_before) <= 60 * 60 * 24:
+        #     print(pem_cert)
+        #     exit()
 
         return pd.Series(
             [

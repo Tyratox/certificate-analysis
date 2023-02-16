@@ -3,6 +3,10 @@ import os
 from typing import Tuple, List, Dict, Any
 import pandas as pd
 from tqdm import tqdm
+import matplotlib as plt
+import numpy as np
+
+from analysis.validity.days import plot_validity_days
 
 # Create new `pandas` methods which use `tqdm` progress
 # (can use tqdm_gui, optional kwargs, etc.)
@@ -17,8 +21,8 @@ tqdm.pandas()
 # output must be a folder
 @click.argument('output_dir')
 # flags / options
-# @click.option('--csv', 'fmt', flag_value='csv', default=True)
-def main(input_file: str, output_dir: str):
+@click.option('--validity-days', 'analysis', flag_value='validity-days', default=True)
+def main(input_file: str, output_dir: str, analysis: str):
     if not os.path.isfile(input_file):
         raise Exception(f"Input path has to be a file")
 
@@ -36,9 +40,10 @@ def main(input_file: str, output_dir: str):
     if not os.path.isdir(output_dir):
         raise Exception(f"Output path must point to a directory")
 
-    print(df)
-
-    pass
+    if analysis == "validity-days":
+        plot_validity_days(df, output_dir)
+    else:
+        raise Exception(f"Unimplemented analysis method '{analysis}'")
 
 
 if __name__ == '__main__':
