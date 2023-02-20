@@ -16,7 +16,8 @@ tqdm.pandas()
 def plot_certificate_transparency_data(df: pd.DataFrame, output_dir: str):
 
     df['EXTENSION_PRECERT_POISON'] = df['EXTENSION_PRECERT_POISON'].fillna(
-        False)
+        False
+    )
 
     poison_count = len(df[df['EXTENSION_PRECERT_POISON'] == True])
     nonpoison_count = len(df[df['EXTENSION_PRECERT_POISON'] == False])
@@ -54,3 +55,34 @@ def plot_certificate_transparency_data(df: pd.DataFrame, output_dir: str):
         ).astype(int)
     )
     plt.savefig(f"{output_dir}/scts.png")
+
+    # check if the certificates with scts and without precert poison coincide
+    # print(len(df[df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] > 0]))
+    # print(nonpoison_count)
+
+    # print(
+    #     len(
+    #         df[
+    #             (df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] > 0) &
+    #             (df['EXTENSION_PRECERT_POISON'] == False)
+    #         ]
+    #     )
+    # )
+
+    # get the ones where they don't
+
+    # certificates that are poisoned should not contain scts!
+    assert len(
+        df[
+            (df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] > 0) &
+            (df['EXTENSION_PRECERT_POISON'] == True)
+        ]
+    ) == 0
+
+    # but ones without might not contain any scts?
+    print(
+        df[
+            (df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] == 0) &
+            (df['EXTENSION_PRECERT_POISON'] == False)
+        ]['id']
+    )
