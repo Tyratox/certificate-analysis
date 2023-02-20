@@ -11,6 +11,9 @@ from analysis.domains import plot_domain_count, count_num_no_common
 from analysis.basic_constraints import count_ca_enabled_certs
 from analysis.key_usage import count_key_usages
 from analysis.location import count_issuer_subject_country_matches
+from analysis.policies import plot_ev_certificates, count_certificate_policies
+from analysis.crl import plot_crl_distribution_points
+from analysis.crypto import plot_signature_algorithm
 
 # Create new `pandas` methods which use `tqdm` progress
 # (can use tqdm_gui, optional kwargs, etc.)
@@ -41,6 +44,9 @@ def ensure_dir_exists(path: str):
 @click.option('--ca-enabled-count', 'analysis', flag_value='ca-enabled-count')
 @click.option('--key-usage-count', 'analysis', flag_value='key-usage-count')
 @click.option('--issuer-subject-country-matches', 'analysis', flag_value='issuer-subject-country-matches')
+@click.option('--certificate-policies', 'analysis', flag_value='certificate-policies')
+@click.option('--crl', 'analysis', flag_value='crl')
+@click.option('--crypto', 'analysis', flag_value='crypto')
 def main(input_file: str, output_dir: str, analysis: str):
     if not os.path.isfile(input_file):
         raise Exception(f"Input path has to be a file")
@@ -73,6 +79,17 @@ def main(input_file: str, output_dir: str, analysis: str):
         count_key_usages(df)
     elif analysis == "issuer-subject-country-matches":
         count_issuer_subject_country_matches(df)
+    elif analysis == "certificate-policies":
+        ensure_dir_exists(f"{output_dir}/policies/")
+        plot_ev_certificates(df, f"{output_dir}/policies/")
+
+        count_certificate_policies(df)
+    elif analysis == "crl":
+        ensure_dir_exists(f"{output_dir}/crl/")
+        plot_crl_distribution_points(df, f"{output_dir}/crl/")
+    elif analysis == "crypto":
+        ensure_dir_exists(f"{output_dir}/crypto/")
+        plot_signature_algorithm(df, f"{output_dir}/crypto/")
     else:
         raise Exception(f"Unimplemented analysis method '{analysis}'")
 
