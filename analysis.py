@@ -14,6 +14,7 @@ from analysis.location import count_issuer_subject_country_matches
 from analysis.policies import plot_ev_certificates, count_certificate_policies
 from analysis.crl import plot_crl_distribution_points
 from analysis.crypto import plot_signature_algorithm
+from analysis.ct import plot_certificate_transparency_data
 
 # Create new `pandas` methods which use `tqdm` progress
 # (can use tqdm_gui, optional kwargs, etc.)
@@ -46,6 +47,7 @@ def ensure_dir_exists(path: str):
 @click.option('--issuer-subject-country-matches', 'analysis', flag_value='issuer-subject-country-matches')
 @click.option('--certificate-policies', 'analysis', flag_value='certificate-policies')
 @click.option('--crl', 'analysis', flag_value='crl')
+@click.option('--ct', 'analysis', flag_value='ct')
 @click.option('--crypto', 'analysis', flag_value='crypto')
 def main(input_file: str, output_dir: str, analysis: str):
     if not os.path.isfile(input_file):
@@ -90,6 +92,9 @@ def main(input_file: str, output_dir: str, analysis: str):
     elif analysis == "crypto":
         ensure_dir_exists(f"{output_dir}/crypto/")
         plot_signature_algorithm(df, f"{output_dir}/crypto/")
+    elif analysis == "ct":
+        ensure_dir_exists(f"{output_dir}/ct/")
+        plot_certificate_transparency_data(df, f"{output_dir}/ct/")
     else:
         raise Exception(f"Unimplemented analysis method '{analysis}'")
 

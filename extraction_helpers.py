@@ -295,7 +295,21 @@ def map_certificate_extension(name: str, extensions: x509.Extensions, oid: x509.
             # every element.
 
             # existence might be interesting to check how many use stapling
-            return [(name, True)]
+            # https://www.rfc-editor.org/rfc/rfc7633
+            return [
+                (name, True),
+                (
+                    # OSCP must-staple: https://scotthelme.co.uk/ocsp-must-staple/
+                    # https://www.rfc-editor.org/rfc/rfc6066
+                    name + "_STATUS_REQUEST",
+                    x509.TLSFeatureType.status_request in extension._features
+                ),
+                (
+                    # https://www.rfc-editor.org/rfc/rfc6961
+                    name + "_STATUS_REQUEST_2",
+                    x509.TLSFeatureType.status_request_v2 in extension._features
+                ),
+            ]
         elif isinstance(extension, x509.CRLNumber):
             # The CRL number is a CRL extension that conveys a monotonically
             # increasing sequence number for a given CRL scope and CRL issuer.
