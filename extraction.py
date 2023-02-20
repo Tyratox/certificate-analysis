@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import click
 from typing import Tuple, List, Dict, Any
 from tqdm import tqdm
@@ -11,6 +12,20 @@ from extraction_helpers import is_valid_input_file, map_certificate_row
 # (can use tqdm_gui, optional kwargs, etc.)
 # (https://stackoverflow.com/a/34365537/2897827)
 tqdm.pandas()
+
+# check which columns only consist of one single value
+# (https://stackoverflow.com/a/54405767/2897827)
+
+
+def single_value_cols(df):
+
+    return [
+        # for lists we cannot perform a comparison!
+        False if (isinstance(df[c].iloc[0], np.ndarray) or isinstance(df[c].iloc[0], list)) else
+        # for non lists, check if all elements match
+        df[c].eq(df[c].iloc[0]).all()
+        for c in df.columns
+    ]
 
 
 def derive_output(output: str, suffix: str, output_extension: str, new_extension: str) -> str:
@@ -27,14 +42,13 @@ def derive_output(output: str, suffix: str, output_extension: str, new_extension
 # the input path, can either be a directory or a single file
 @click.argument('input', type=click.Path(exists=True))
 @click.argument('output')
-# flags / options
-@click.option('--csv', 'fmt', flag_value='csv', default=True)
-@click.option('--parquet', 'fmt', flag_value='parquet')
-def main(input: str, output: str, fmt: str):
-    if fmt == 'parquet':
+def main(input: str, output: str):
+    if output.endswith('.parquet'):
         extension = '.parquet'
-    else:
+    elif output.endswith(".csv"):
         extension = ".csv"
+    else:
+        raise Exception(f"Unkown output format '{output}'")
 
     # first validate the arguments
     input_files = []
@@ -56,11 +70,6 @@ def main(input: str, output: str, fmt: str):
     if len(input_files) == 0:
         raise Exception(
             f"Did not find any valid input files given the path '{input}'"
-        )
-
-    if not output.endswith(extension):
-        raise Exception(
-            f"Output path must end on '{extension}', '{output}' given"
         )
 
     df = None
@@ -92,11 +101,17 @@ def main(input: str, output: str, fmt: str):
         else:
             df = pd.concat([df, df_in], ignore_index=True)
 
-    # reduce dataframe to required columns
-    df = df[['certificate_base64', 'certificate_chain_base64']]
+    # reduce dataframe to required columns, https://stackoverflow.com/a/45846315/2897827
+    df = df.drop(
+        df.columns.difference(
+            ['id', 'certificate_base64', 'certificate_chain_base64']
+        ),
+        axis=1
+    )
     # convert certificate chain to list column
     df['certificate_chain_base64'] = df['certificate_chain_base64'].apply(
-        lambda chain: chain.split(";"))
+        lambda chain: chain.split(";")
+    )
 
     # store copy of original df with whole certificates
     cert_df = df
@@ -119,12 +134,6 @@ def main(input: str, output: str, fmt: str):
     invalid_certificates = cert_df.iloc[empty_row_indices]
     # drop all of the empty rows
     df = df.drop(index=empty_row_indices)
-
-    # check which columns only consist of one single value
-    # (https://stackoverflow.com/a/54405767/2897827)
-    def single_value_cols(df):
-        a = df.to_numpy()  # df.values (pandas<0.24)
-        return (a[0] == a).all(0)
 
     # array of booleans indicating whether a column only contains a single value
     is_single_value_col = single_value_cols(df)
@@ -163,10 +172,12 @@ def main(input: str, output: str, fmt: str):
     )
 
     # store all of the computed data on disk in the given format
-    if fmt == "parquet":
+    if output.endswith(".parquet"):
         df.to_parquet(output, index=False)
-    else:
+    elif output.endswith(".csv"):
         df.to_csv(output, index=False)
+    else:
+        raise Exception(f"Unkown output format '{output}'")
 
     # single valued output and invalid certificates are always stored as csv, they are usually small
     pd.DataFrame([single_valued]).to_csv(single_valued_output, index=False)

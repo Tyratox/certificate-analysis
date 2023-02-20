@@ -420,6 +420,7 @@ def map_certificate_row(row):
 
         return pd.Series(
             [
+                row['id'],
                 map_certificate_version(cert),
                 map_certificate_datetime(cert.not_valid_before),
                 map_certificate_datetime(cert.not_valid_after),
@@ -436,6 +437,7 @@ def map_certificate_row(row):
             ] +
             extension_values,
             index=[
+                'id',
                 'version',
                 'not_valid_before',
                 'not_valid_after',
