@@ -41,7 +41,7 @@ def plot_domain_count(df: pd.DataFrame, output_dir: str):
     ax.set_xlabel("# of domains (CN + SANs)")
     # ax.bar(count_by_days.index, count_by_days)
     ax.plot(count_by_domains.index, count_by_domains)
-    plt.savefig(f"{output_dir}/domains/domain-counts.png")
+    plt.savefig(f"{output_dir}/domain-counts.png")
 
     # df.explode('subject_COMMON_NAME').explode('EXTENSION_SUBJECT_ALTERNATIVE_NAME')
     # print(df['EXTENSION_SUBJECT_ALTERNATIVE_NAME'].dropna())
