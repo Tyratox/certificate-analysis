@@ -18,6 +18,16 @@ from analysis.location import count_issuer_subject_country_matches
 tqdm.pandas()
 
 
+def ensure_dir_exists(path: str):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    elif not os.path.isdir(path):
+        raise Exception(
+            f"Expected '{path}' to either not exist or to be a directory"
+        )
+
+
 @click.command()
 # positional arguments
 # the input path, either a csv file or a parquet file
@@ -50,9 +60,11 @@ def main(input_file: str, output_dir: str, analysis: str):
         raise Exception(f"Output path must point to a directory")
 
     if analysis == "validity-days":
-        plot_validity_days(df, output_dir)
+        ensure_dir_exists(f"{output_dir}/validity/")
+        plot_validity_days(df, f"{output_dir}/validity/")
     elif analysis == "domain-count":
-        plot_domain_count(df, output_dir)
+        ensure_dir_exists(f"{output_dir}/domains/")
+        plot_domain_count(df, f"{output_dir}/domains/")
     elif analysis == "no-common-name-count":
         count_num_no_common(df)
     elif analysis == "ca-enabled-count":
