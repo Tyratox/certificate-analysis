@@ -48,4 +48,4 @@ def plot_domain_count(df: pd.DataFrame, output_dir: str):
 
 
 def count_num_no_common(df: pd.DataFrame):
-    print(df['subject_COMMON_NAME'].isna().sum())
+    print(f"{df['subject_COMMON_NAME'].isna().sum()} / {len(df)}")

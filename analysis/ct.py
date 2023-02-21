@@ -80,9 +80,9 @@ def plot_certificate_transparency_data(df: pd.DataFrame, output_dir: str):
     ) == 0
 
     # but ones without might not contain any scts?
-    print(
-        df[
-            (df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] == 0) &
-            (df['EXTENSION_PRECERT_POISON'] == False)
-        ]['id']
-    )
+    # print(
+    #     df[
+    #         (df['EXTENSION_PRECERT_SIGNED_CERTIFICATE_TIMESTAMPS'] == 0) &
+    #         (df['EXTENSION_PRECERT_POISON'] == False)
+    #     ]['id']
+    # )

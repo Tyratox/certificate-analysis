@@ -41,7 +41,7 @@ def ensure_dir_exists(path: str):
 # flags / options
 @click.option('--validity-days', 'analysis', flag_value='validity-days', default=True)
 @click.option('--domain-count', 'analysis', flag_value='domain-count')
-@click.option('--no-common-name-count', 'analysis', flag_value='no-common-name')
+@click.option('--no-common-name-count', 'analysis', flag_value='no-common-name-count')
 @click.option('--ca-enabled-count', 'analysis', flag_value='ca-enabled-count')
 @click.option('--key-usage-count', 'analysis', flag_value='key-usage-count')
 @click.option('--issuer-subject-country-matches', 'analysis', flag_value='issuer-subject-country-matches')

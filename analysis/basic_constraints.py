@@ -24,4 +24,4 @@ def count_ca_enabled_certs(df: pd.DataFrame):
     # but this is fine as this results in the flag being set to false
     # https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.9
     # print(df[df['EXTENSION_BASIC_CONSTRAINTS_CA'].isna()]["id"])
-    print(len(df[df['EXTENSION_BASIC_CONSTRAINTS_CA'].isna()]))
+    print(f"{len(df[df['EXTENSION_BASIC_CONSTRAINTS_CA'].isna()])} / {len(df)}")
